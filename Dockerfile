@@ -1,8 +1,9 @@
 # Derived from https://github.com/madhawav/YOLO3-4-Py/blob/master/docker/Dockerfile-gpu
-FROM nvidia/cuda:9.0-cudnn7-devel
+ARG BASE_IMAGE=nvidia/cuda:10.1-cudnn7-devel
+FROM ${BASE_IMAGE}
 
 ## Dependency installation ##
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	build-essential \
 	cmake \
 	ffmpeg \
@@ -12,7 +13,6 @@ RUN apt-get update && apt-get install -y \
 	libavformat-dev \
 	libdc1394-22-dev \
 	libgdal-dev \
-	libjasper-dev \
 	libjpeg-dev \
 	libopencore-amrnb-dev \
 	libopencore-amrwb-dev \
@@ -59,9 +59,10 @@ RUN cd /opencv-${OPENCV_VERSION}/build && \
 
 
 ## Downloading and compiling darknet ##
+ARG GPU=1
 RUN git clone https://github.com/pjreddie/darknet.git /darknet
 RUN cd /darknet && \
-	sed -i '/GPU=0/c\GPU=1' Makefile && \
+	if [ ${GPU} = "1" ] ; then sed -i '/GPU=0/c\GPU=1' Makefile ; fi && \
 	sed -i '/OPENCV=0/c\OPENCV=1' Makefile && \
 	make
 ENV DARKNET_HOME /darknet
@@ -70,7 +71,7 @@ ENV LD_LIBRARY_PATH /darknet
 ## Download and compile YOLO3-4-Py ##
 RUN git clone https://github.com/madhawav/YOLO3-4-Py.git /YOLO3-4-Py
 RUN pip3 install pkgconfig cython numpy
-ENV GPU 1
+ENV GPU ${GPU}
 ENV OPENCV 1
 RUN cd /YOLO3-4-Py && \
 	python3 setup.py build_ext --inplace
@@ -81,5 +82,6 @@ RUN cd /YOLO3-4-Py/ && sh download_models.sh
 
 ## Run test ##
 ADD ./obj_detect.py /YOLO3-4-Py/
+ADD ./gen_thumbs.sh /bin/gen_thumbs
 WORKDIR /YOLO3-4-Py/
 ENTRYPOINT ["python3","/YOLO3-4-Py/obj_detect.py"]
