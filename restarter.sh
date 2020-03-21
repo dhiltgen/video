@@ -16,7 +16,7 @@ RUNNING_CPU=( $(docker ps --filter name=camera --format '{{.Names}}' | sort | gr
 AVAILABLE_GPU=( $(docker ps -a --filter name=camera --format '{{.Names}}' | sort | grep -- '-gpu') )
 AVAILABLE_CPU=( $(docker ps -a --filter name=camera --format '{{.Names}}' | sort | grep -- '-cpu') )
 
-CAMERAS=( $(for cam in ${AVAILABLE_GPU[@]}; do echo $cam|cut -f1 -d-; done | sort -r -u) )
+CAMERAS=( $(for cam in ${AVAILABLE_GPU[@]}; do echo $cam|cut -f1 -d-; done | sort -R -u) )
 NOT_RUNNING=( )
 
 #echo "Cameras: ${CAMERAS[@]}"
@@ -58,3 +58,5 @@ for cam in ${NOT_RUNNING[@]}; do
 		RUNNING_CPU+=(${cam}-cpu)
 	fi
 done
+
+
