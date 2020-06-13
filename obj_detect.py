@@ -25,10 +25,11 @@ import cv2
 
 # A list of objects that we want to generally ignore
 # (actual interesting ones are things like person, bear, dog, etc.)
-# TODO consider adding "car" to the list
-ObjectsToIgnore = ["bench", "chair", "sports ball", "frisbee", "bed", "baseball bat", "bird", "diningtable", "fork", "boat"]
+# TODO refine this to be a allow-list of sorts...
+ObjectsToIgnore = ["bench", "chair", "sports ball", "frisbee", "bed", "baseball bat", "bird", "diningtable", "fork", "boat", "clock", "umbrella", "knife"]
 
-MARKER="Objects Detected"
+FINISHED_MARKER="Objects Detected"
+PROCESSING_MARKER="Detecing Objects"
 
 
 #LABELS = open("/src/darknet/data/coco.names").read().strip().split("\n")
@@ -48,6 +49,7 @@ net = Detector(bytes("cfg/yolov3.cfg", encoding="utf-8"),
 #net.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL)
 
 # TODO this doesn't seem to work...
+#      using a smaller network with just the objects we want could speed up CPU runs
 #net = cv2.dnn.readNetFromDarknet("./darknet/cfg/tiny.cfg", "./tiny.weights")
 
 # GUI
@@ -84,11 +86,27 @@ for thumb in glob.glob(sys.argv[1] + "/**/*.thumb", recursive=True):
     try:
         output = subprocess.check_output("identify -format '%c\n' "+thumb,
             shell=True)
-        if MARKER in str(output):
+        if PROCESSING_MARKER in str(output):
+            # TODO catch crashed runners by detecting stale in-process data
+            #      either by timestamp or json encodde in the file
+            print("Skipping in-processing "+filename+" with "+ str(output))
+            continue
+
+        if FINISHED_MARKER in str(output):
             print("Skipping already scanned "+filename+" with "+ str(output))
             continue
     except:
+        if not os.path.exists(filename):
+            print("INFO: "+filename+ " no longer exists (another worker must have removed it) - skipping")
+            continue
         print("WARNING: failed to read existing metadata on "+thumb)
+
+    # There's a small window for 2+ workers to race, but worst case they'll
+    # both wind up processing the same video and should reach the same conclusion
+    # and either delete or update the thumb anyway
+    output = subprocess.check_output(
+            "convert -comment '"+PROCESSING_MARKER+": "+time.asctime()+"' "+thumb+" "+thumb,
+            shell=True)
 
     print("Processing " + filename, flush=True)
 
@@ -145,7 +163,7 @@ for thumb in glob.glob(sys.argv[1] + "/**/*.thumb", recursive=True):
         if dryRun:
             continue
         output = subprocess.check_output(
-            "convert -comment '"+MARKER+":"+str(bestMatches).replace("'",'\"')+"' "+thumb+" "+thumb,
+            "convert -comment '"+FINISHED_MARKER+":"+str(bestMatches).replace("'",'\"')+"' "+thumb+" "+thumb,
             shell=True)
         print("Updated "+thumb+ " " + str(output), flush=True)
     else:
@@ -170,8 +188,9 @@ end = time.time()
 # GUI
 #cv2.destroyAllWindows()
 
+print("Finished run. (sleep for 10s before exit)")
 if frameCount > 0:
     print("Average time per frame: "+ str((end - start)/frameCount))
 # Sleep for a little while so we can restart always with a brief pause...
-time.sleep(5)
+time.sleep(10)
 #sys.exit(exitCode)

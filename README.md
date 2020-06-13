@@ -22,17 +22,18 @@ docker build -t dhiltgen/cv:cuda .
 ```
 
 ```sh
-CAM=1
+INST=1
 PROC=gpu
-docker stop camera${CAM}-${PROC}
-docker rm camera${CAM}-${PROC}
+docker stop camera${INST}-${PROC}
+docker rm camera${INST}-${PROC}
 docker run -d \
-	--name camera${CAM}-${PROC} \
+	--name camera${INST}-${PROC} \
 	-v /videos/motioneye:/videos/motioneye \
-	--cpus 1.5 \
+	--cpus 0.25 \
+	--restart always \
 	$(if [ ${PROC} = "gpu" ]; then echo "--gpus all"; fi) \
 	dhiltgen/cv:${PROC} \
-	/videos/motioneye/Camera${CAM}/
+	/videos/motioneye/
 ```
 
 ```sh
