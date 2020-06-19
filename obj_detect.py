@@ -26,7 +26,7 @@ import cv2
 # A list of objects that we want to generally ignore
 # (actual interesting ones are things like person, bear, dog, etc.)
 # TODO refine this to be a allow-list of sorts...
-ObjectsToIgnore = ["bench", "chair", "sports ball", "frisbee", "bed", "baseball bat", "bird", "diningtable", "fork", "boat", "clock", "umbrella", "knife"]
+ObjectsToIgnore = ["bench", "chair", "sports ball", "frisbee", "bed", "baseball bat", "bird", "diningtable", "fork", "boat", "clock", "umbrella", "knife", "fire hydrant"]
 
 FINISHED_MARKER="Objects Detected"
 PROCESSING_MARKER="Detecing Objects"
@@ -78,7 +78,7 @@ def hasGoodObjects(matches):
     return False
 
 
-print("Processing videos from " + sys.argv[1])
+print("Processing videos from " + sys.argv[1], flush=True)
 for thumb in glob.glob(sys.argv[1] + "/**/*.thumb", recursive=True):
     filename = thumb[:len(thumb)-6]
 
